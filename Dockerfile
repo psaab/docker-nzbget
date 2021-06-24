@@ -28,7 +28,7 @@ RUN \
   git cherry-pick -n fa57474d && \
   ./configure \
     bindir='${exec_prefix}' && \
-  make && \
+  make -j $(nproc) && \
   make prefix=/app/nzbget install && \
   sed -i \
     -e "s#^MainDir=.*#MainDir=/downloads#g" \
@@ -52,6 +52,11 @@ RUN \
   curl -o \
     /app/nzbget/cacert.pem -L \
     "https://curl.haxx.se/ca/cacert.pem"
+
+WORKDIR /src/deps
+RUN git clone https://github.com/psaab/unrar.git
+WORKDIR /src/deps/unrar
+RUN make && make install
 
 # Runtime Stage
 FROM ghcr.io/linuxserver/baseimage-alpine:3.13
@@ -83,7 +88,6 @@ RUN \
     p7zip \
     py3-pip \
     python3 \
-    unrar \
     wget && \
   echo "**** install python packages ****" && \
   pip3 install --no-cache-dir -U \
@@ -105,6 +109,7 @@ RUN \
 
 # add local files and files from buildstage
 COPY --from=buildstage /app/nzbget /app/nzbget
+COPY --from=buildstage /usr/bin/unrar /usr/bin/unrar
 COPY root/ /
 
 # ports and volumes
